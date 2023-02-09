@@ -129,10 +129,17 @@ def delete_user(id: str):
 #form-----
 Prefix = "form"
 @app.get('/'+Prefix)
-def read_form(id:str):
+def read_form():
     try:
         conn = pymysql.connect(**db_settings)
         cursor = conn.cursor(DictCursor)
+
+        #get max fId
+        command = "SELECT MAX(fId) AS fId FROM form"
+        cursor.execute(command)
+        result = cursor.fetchone()
+        id = result["fId"]
+
 
         #get the info of form & who is the host
         command = "SELECT * FROM form WHERE fId = '{}'".format(id)
@@ -151,7 +158,6 @@ def read_form(id:str):
         cursor.execute(command)
         result = cursor.fetchall()
 
-        
         #建立return 的資料結構
         response = {"success":1}
         response["hostId"] = hostId
@@ -182,7 +188,7 @@ async def create_form(request: Request):
         command = "SELECT MAX(fId) AS `fId` FROM `form`"
         cursor.execute(command)
         result = cursor.fetchone() 
-        response = {"success":1,"fId":result['fId']}
+        response = {"success":1}
         conn.close()
         #建立return 的資料結構
         
@@ -229,7 +235,7 @@ async def create_user_form(request: Request):
         remark = _json["remark"]
 
         #get formId
-        command = "SELECT MAX(`fId`) FROM `form` "
+        command = "SELECT MAX(`fId`) FROM `form`"
         cursor.execute(command)
         result = cursor.fetchone()
         print(result)
@@ -253,7 +259,6 @@ async def create_user_form(request: Request):
 @app.put('/'+Prefix)
 async def update_user_form(request: Request):
     try:
-       
         conn = pymysql.connect(**db_settings)
         cursor = conn.cursor() 
         
@@ -319,18 +324,24 @@ async def create_meeting(request: Request):
         hostId = _json["hostId"]
         attendee = _json["attendee"]
 
+        print("create meeting")
+        print(_json)
         #create meeting
         command = "INSERT INTO `meeting`(`s_time`, `location`, `content`, `hostId`) VALUES ('{}','{}','{}','{}')"
         command = command.format(s_time, location, content, hostId)
         cursor.execute(command)
         conn.commit()
-
+        print("Create meeting")
+        print(command)
         #get mId
         command = "SELECT MAX(`mId`) AS max_mId FROM `meeting`"
         cursor.execute(command)
         result = cursor.fetchone()
         mId = result["max_mId"]
         
+        print(attendee)
+        print(type(attendee))
+
         attendee = attendee.split(",")
         for at in attendee:
             at = at[2:-1]
@@ -338,7 +349,8 @@ async def create_meeting(request: Request):
             command = command.format(at, mId, "reject", "")
             cursor.execute(command)
             conn.commit()
-        
+        print("Create choose")
+        print(command)
 
         #建立return 的資料結構
         response = {"success":1}
@@ -357,21 +369,20 @@ async def read_choose_i_host_meeting(uId:str):
     try:
         conn = pymysql.connect(**db_settings)
         cursor = conn.cursor(DictCursor)
-
-       
        
         command = "SELECT MAX(`mId`) AS max_mId FROM `meeting`"
         cursor.execute(command)
         result = cursor.fetchone()
         mId = result["max_mId"]
-        command = "SELECT * FROM `meeting`,`choose` WHERE `meeting`.`mId` = `choose`.`mId` AND `meeting`.`mId` ={} AND `meeting`.`hostId`='{}' and `s_time` > now()".format(mId,uId)
+        command = "SELECT * FROM `meeting`,`choose` WHERE `meeting`.`mId` = `choose`.`mId` AND `meeting`.`mId` ={} AND `meeting`.`hostId`='{}'".format(mId,uId)
+        print(command)
         cursor.execute(command)
         result = cursor.fetchall()
 
         #建立return 的資料結構
-        response = {"success":2}
+        response = {"success":1}
         response["data"] = result
-        #response["command"] = command
+        response["command"] = command
         conn.close()
         return response
     except Exception as ex:
@@ -386,7 +397,10 @@ async def update_choose(request: Request):
         _json = await request.json()
        
         uId = _json["uId"]
-        mId = 19#_json["mId"]
+        command = "SELECT MAX(`mId`) AS max_mId FROM `meeting`"
+        cursor.execute(command)
+        result = cursor.fetchone()
+        mId = result["max_mId"]
         choose = _json["choose"]
         reason = _json["reason"]
         #update the choose
@@ -405,43 +419,36 @@ async def update_choose(request: Request):
         print(ex)
 
 
-@app.get('/get_time')
-async def get_time(request: Request):
+
+
+# tag--------
+#3個
+Prefix = "tag"
+
+@app.get('/'+Prefix)
+def read_tag_list():
     try:
         conn = pymysql.connect(**db_settings)
         cursor = conn.cursor(DictCursor)
+        command = "SELECT * FROM tag WHERE reply = '0'"
+  
+        cursor.execute(command)
 
-        _json = await request.json()
-       
-        command = "SELECT MAX(`mId`) AS max_mId FROM `meeting`"
-        cursor.execute(command)
-        result = cursor.fetchone()
-        mId = result["max_mId"]
-        #uId = _json["uId"]
-        uId = "1068197537137307648"
-        command = "SELECT * FROM `meeting`,`choose` WHERE `meeting`.`mId` = `choose`.`mId` AND `meeting`.`mId` ={} AND `meeting`.`hostId`='{}' and `s_time` > now()".format(mId,uId)
-        cursor.execute(command)
         result = cursor.fetchall()
-
-        #建立return 的資料結構
         response = {"success":1}
         response["data"] = result
-        response["command"] = command
         conn.close()
         return response
     except Exception as ex:
         print(ex)
 
 
-# tag--------
-#3個
-Prefix = "tag"
 @app.get('/'+Prefix+"/{uId}")
 def read_tag(uId: str):
     try:
         conn = pymysql.connect(**db_settings)
         cursor = conn.cursor(DictCursor)
-        command = "SELECT * FROM tag WHERE clientId = {}".format(uId)
+        command = "SELECT * FROM tag WHERE clientId = {} and reply = '0' ".format(uId)
   
         cursor.execute(command)
 
@@ -461,16 +468,17 @@ async def create_tag(request: Request):
         _json = await request.json()
 
         hostId = _json["hostId"]
-        clientId = _json["clientId"]
-        msgId = _json["msgId"]
+        clientIdList = _json["clientId"]
+        content = _json["content"]
+        
+        for clientId in clientIdList:
+            command = "INSERT INTO `tag`(`hostId`, `clientId`,`content`, `reply`) VALUES ('{}','{}','{}','{}')"
+            command = command.format(hostId, clientId,content , '0')
+            cursor.execute(command)
+            conn.commit()
+        
+ 
 
-        command = "INSERT INTO `tag`(`hostId`, `clientId`, `msgId`, `reply`) VALUES ('{}','{}','{}','{}')"
-        command = command.format(hostId, clientId, msgId, '0')
-        print(command)
-        cursor.execute(command)
-        conn.commit()
-        
-        
         response = {"success":1}
         conn.close()
         return response
@@ -484,16 +492,18 @@ async def update_tag(request: Request):
         cursor = conn.cursor(DictCursor)
         _json = await request.json()
 
-        hostId = _json["hostId"]
-        clientId = _json["clientId"]
         msgId = _json["msgId"]
 
-        command = "UPDATE `tag` SET `reply` = 1 WHERE `clientId` = '{}' AND `hostId` = '{}' AND `msgId` = '{}'"
-        command = command.format(clientId, hostId, msgId)
+        command = "UPDATE `tag` SET `reply` = 1 WHERE  `msgId` = '{}'"
+        command = command.format(msgId)
         cursor.execute(command)
         #print(command)
         conn.commit()
-        response = {"success":1}
+
+        command = "SELECT * FROM tag WHERE msgId = {}".format(msgId)
+        cursor.execute(command)
+        result = cursor.fetchall()
+        response = {"success":1,"data":result}
         conn.close()
         return response
     except Exception as ex:
@@ -562,10 +572,20 @@ async def update_job(request: Request):
         timestr = time.strftime('%Y-%m-%d %H:%M:%S')
         command = "UPDATE `jobs` SET `status` = '{}', `pre_time` = '{}' WHERE `jId` = '{}'"
         command = command.format(status, timestr, jId)
+        print(command)
         cursor.execute(command)
         conn.commit()
 
+        #get hostid
+        command = "SELECT * FROM `jobs` WHERE `jId`='{}'".format(jId)
+        cursor.execute(command)
+        print(command)
+        result = cursor.fetchone()
+        hostId = result['hostId']
+        clientId = result['clientId']
+        content = result['content']
+
         conn.close()
-        return {"success":1}
+        return {"success":1,"hostId":hostId,"clientId":clientId,"content":content}
     except Exception as ex:
         print(ex)
