@@ -1,6 +1,6 @@
 # 資料庫參數設定
 db_settings = {
-    "host": "104.199.145.155",
+    "host": "127.0.0.1",
     "port": 3306,
     "user": "root",
     "password": "",

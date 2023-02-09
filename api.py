@@ -9,7 +9,7 @@ from config import *
 
 app = FastAPI()
 
-@app.route('/')
+@app.get('/')
 def index():
     return 'hello!!'
 
