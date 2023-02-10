@@ -9,6 +9,7 @@ from config import *
 
 app = FastAPI()
 
+
 @app.get('/')
 def index():
     return 'hello!!'
@@ -591,4 +592,4 @@ async def update_job(request: Request):
         print(ex)
 
 if __name__ == '__main__':
-    app.run(port=8000)
+    app.run(host='127.0.0.1', debug=True)    
