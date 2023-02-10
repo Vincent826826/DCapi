@@ -589,3 +589,6 @@ async def update_job(request: Request):
         return {"success":1,"hostId":hostId,"clientId":clientId,"content":content}
     except Exception as ex:
         print(ex)
+
+if __name__ == '__main__':
+    app.run(port=8000)
