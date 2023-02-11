@@ -7,7 +7,6 @@ db_settings = {
     "db": "discord",
     "charset": "utf8"
 }
-#104.199.145.155
 
 
 

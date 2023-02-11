@@ -1,0 +1,6 @@
+fastapi==0.89.1
+Flask==2.2.2
+Flask-Cors==3.0.10
+Flask-MySQL==1.5.2
+pydantic==1.10.4
+PyMySQL==1.0.2

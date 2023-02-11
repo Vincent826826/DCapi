@@ -6,13 +6,20 @@ from pymysql.cursors import DictCursor
 import time    
 import datetime
 from config import *
+import requests
 
 app = FastAPI()
 
 
 @app.get('/')
 def index():
-    return 'hello!!'
+    return "hello world"
+
+
+@app.get('/ip')
+def get_ip():
+    ip = requests.get('https://api.ipify.org').text
+    return ip
 
 #user-----
 Prefix = "user"
@@ -185,10 +192,6 @@ async def create_form(request: Request):
         cursor.execute(command)
         conn.commit()
 
-        cursor = conn.cursor(DictCursor)
-        command = "SELECT MAX(fId) AS `fId` FROM `form`"
-        cursor.execute(command)
-        result = cursor.fetchone() 
         response = {"success":1}
         conn.close()
         #建立return 的資料結構
@@ -590,6 +593,3 @@ async def update_job(request: Request):
         return {"success":1,"hostId":hostId,"clientId":clientId,"content":content}
     except Exception as ex:
         print(ex)
-
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', debug=True)    
